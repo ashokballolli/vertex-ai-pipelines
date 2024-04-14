@@ -10,6 +10,7 @@ REGION = "us-central1"
 BUCKET_URI = "gs://asgb-vertex-ai-pipelines"
 API_ENDPOINT = "{}-aiplatform.googleapis.com".format(REGION)
 PIPELINE_ROOT = "{}/pipeline_root/intro".format(BUCKET_URI)
+DISPLAY_NAME = "intro_pipeline_job_unique"
 
 
 # Path to your service account key JSON file
@@ -83,28 +84,19 @@ def pipeline(text: str = "hi there"):
         text3=two_outputs_task.outputs["output_two"],
     )
 
+
 def compile_pipeline():
     compiler.Compiler().compile(pipeline_func=pipeline, package_path="intro_pipeline.yaml")
 
+
 def get_job():
     return aip.PipelineJob(
-        display_name="intro_pipeline_job_unique",
+        display_name=DISPLAY_NAME,
         template_path="intro_pipeline.yaml",
         pipeline_root=PIPELINE_ROOT,
         credentials=credentials,
         enable_caching=False,           # TODO: Set to True to enable caching
     )
-
-def delete_pipeline():
-    job = aip.PipelineJob(
-        display_name="intro_pipeline_job_unique",
-        template_path="intro_pipeline.yaml",
-        pipeline_root=PIPELINE_ROOT,
-        credentials=credentials,
-        enable_caching=False,           # TODO: Set to True to enable caching
-    )
-
-    job.delete()
 
 
 # compile_pipeline()
@@ -114,6 +106,13 @@ def delete_pipeline():
 
 # for j in get_job().list():
 #     print(j.resource_name)
+
+
+pipelines = aip.PipelineJob.list(
+    filter=f"display_name={DISPLAY_NAME}", order_by="create_time desc"
+)
+pipeline = pipelines[0]
+print(pipeline.resource_name)
 
 # tried to use my own credentials but it failed with the following error
 # raise exceptions.from_grpc_error(exc) from exc google.api_core.exceptions.InvalidArgument: 400 You do not have permission to act as service_account: 737482735608-compute@developer.gserviceaccount.com. (or it may not exist).
